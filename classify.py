@@ -90,6 +90,90 @@ def classify_and_respond(message: str) -> Tuple[str, str]:
     return category, draft
 
 
+def load_env_file():
+    """Считывает локальный файл .env (если он существует), не требуя python-dotenv."""
+    import os
+    from pathlib import Path
+    env_path = Path(__file__).resolve().with_name(".env")
+    if env_path.exists():
+        try:
+            for line in env_path.read_text(encoding="utf-8").splitlines():
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    k, v = line.split("=", 1)
+                    k, v = k.strip(), v.strip().strip('"').strip("'")
+                    if k and k not in os.environ:
+                        os.environ[k] = v
+        except Exception:
+            pass
+
+
+def classify_with_gemini(message: str, api_key: str = None) -> Tuple[str, str]:
+    """
+    Классифицирует обращение с помощью Google Gemini API (бесплатный уровень).
+    При отсутствии ключа или сетевой ошибке безопасно возвращает результат локальных правил.
+    """
+    import os
+    import json
+    import urllib.request
+    import urllib.error
+
+    load_env_file()
+    key = api_key or os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+    if not key:
+        print("[Инфо] GEMINI_API_KEY не задан. Используются локальные правила.", file=sys.stderr)
+        return classify_and_respond(message)
+
+    models = ["gemini-flash-latest", "gemini-3.5-flash-lite"]
+    prompt = (
+        "Ты — помощник службы поддержки. Классифицируй входящее обращение строго по одной из трёх категорий: "
+        "'справка', 'жалоба', 'другое'.\n"
+        "Сформируй вежливый черновик ответа на русском языке (начинается с 'Здравствуйте!').\n"
+        f"Обращение: \"{message}\"\n\n"
+        "Верни результат СТРОГО в формате JSON:\n"
+        '{"category": "справка"|"жалоба"|"другое", "draft": "текст ответа"}'
+    )
+
+    payload = {
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {
+            "responseMimeType": "application/json",
+            "temperature": 0.2
+        }
+    }
+
+    for model_name in models:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={key}"
+        try:
+            req = urllib.request.Request(
+                url,
+                data=json.dumps(payload).encode("utf-8"),
+                headers={"Content-Type": "application/json"},
+                method="POST"
+            )
+            with urllib.request.urlopen(req, timeout=10) as response:
+                res_data = json.loads(response.read().decode("utf-8"))
+                raw_json = res_data["candidates"][0]["content"]["parts"][0]["text"]
+                parsed = json.loads(raw_json)
+                cat = str(parsed.get("category", "другое")).strip().lower()
+                if cat not in ("справка", "жалоба", "другое"):
+                    cat = "другое"
+                draft = str(parsed.get("draft", "")).strip()
+                if not draft:
+                    draft = classify_and_respond(message)[1]
+                return cat, draft
+        except urllib.error.HTTPError as err:
+            if err.code == 503:
+                continue
+            error_body = err.read().decode("utf-8", errors="replace")
+            print(f"[Предупреждение] Gemini API HTTP {err.code}: {error_body}", file=sys.stderr)
+            return classify_and_respond(message)
+        except Exception:
+            continue
+
+    return classify_and_respond(message)
+
+
 def main(argv=None) -> int:
     """Обрабатывает файл из аргумента или комплектный messages.txt."""
     # На Windows кодировка консоли может быть cp1251 и не поддерживать Wi‑Fi.
@@ -97,12 +181,15 @@ def main(argv=None) -> int:
         if hasattr(stream, "reconfigure"):
             stream.reconfigure(encoding="utf-8")
 
-    args = sys.argv[1:] if argv is None else argv
-    if len(args) > 1:
-        print("Использование: python classify.py [путь-к-файлу]", file=sys.stderr)
+    raw_args = sys.argv[1:] if argv is None else argv
+    use_llm = "--llm" in raw_args
+    positional = [arg for arg in raw_args if not arg.startswith("--")]
+
+    if len(positional) > 1:
+        print("Использование: python classify.py [--llm] [путь-к-файлу]", file=sys.stderr)
         return 2
 
-    file_path = Path(args[0]) if args else Path(__file__).resolve().with_name("messages.txt")
+    file_path = Path(positional[0]) if positional else Path(__file__).resolve().with_name("messages.txt")
     try:
         lines = [line.strip() for line in file_path.read_text(encoding="utf-8").splitlines() if line.strip()]
     except (OSError, UnicodeError) as exc:
@@ -114,7 +201,11 @@ def main(argv=None) -> int:
         return 1
 
     for number, line in enumerate(lines, 1):
-        category, draft = classify_and_respond(line)
+        if use_llm:
+            category, draft = classify_with_gemini(line)
+        else:
+            category, draft = classify_and_respond(line)
+
         print(f"Обращение #{number}: {line}")
         print(f"Категория: {category}")
         print(f"Черновик: {draft}\n")

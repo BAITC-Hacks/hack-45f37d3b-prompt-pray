@@ -8,21 +8,21 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: 'Segoe UI', Arial, sans-serif;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
       background: #f0f4ff;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 40px 16px;
+      padding: 36px 16px;
     }
 
     header {
       text-align: center;
-      margin-bottom: 32px;
+      margin-bottom: 28px;
     }
     header h1 {
-      font-size: 1.9rem;
+      font-size: 2rem;
       color: #1a237e;
       font-weight: 700;
     }
@@ -36,49 +36,93 @@
       background: #fff;
       border-radius: 16px;
       box-shadow: 0 4px 24px rgba(26,35,126,0.10);
-      padding: 28px 32px;
+      padding: 26px 30px;
       width: 100%;
       max-width: 680px;
-      margin-bottom: 24px;
+      margin-bottom: 20px;
+      position: relative;
+    }
+
+    /* Mode Switcher */
+    .mode-switcher-container {
+      margin-bottom: 18px;
+    }
+    .mode-label {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #3949ab;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 8px;
+      display: block;
+    }
+    .segmented-control {
+      display: flex;
+      background: #e8eaf6;
+      padding: 4px;
+      border-radius: 10px;
+      gap: 4px;
+    }
+    .segmented-btn {
+      flex: 1;
+      padding: 9px 14px;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      background: transparent;
+      color: #5c6bc0;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .segmented-btn.active {
+      background: #ffffff;
+      color: #1a237e;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     }
 
     label {
       display: block;
       font-weight: 600;
       color: #3949ab;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
       font-size: 0.95rem;
     }
 
     textarea {
       width: 100%;
-      height: 110px;
+      height: 105px;
       border: 2px solid #c5cae9;
       border-radius: 10px;
       padding: 12px 14px;
-      font-size: 1rem;
+      font-size: 0.98rem;
       resize: vertical;
       outline: none;
       transition: border-color 0.2s;
       color: #1a237e;
+      font-family: inherit;
     }
     textarea:focus { border-color: #3f51b5; }
 
     .btn-row {
       display: flex;
-      gap: 12px;
-      margin-top: 16px;
+      gap: 10px;
+      margin-top: 14px;
       flex-wrap: wrap;
     }
 
     button {
-      padding: 10px 24px;
+      padding: 9px 20px;
       border: none;
       border-radius: 8px;
-      font-size: 0.95rem;
+      font-size: 0.92rem;
       font-weight: 600;
       cursor: pointer;
-      transition: background 0.2s, transform 0.1s;
+      transition: all 0.15s;
     }
     button:active { transform: scale(0.97); }
 
@@ -94,11 +138,22 @@
     }
     .btn-secondary:hover { background: #c5cae9; }
 
+    .btn-toggle-bulk {
+      background: #e8eaf6;
+      color: #283593;
+      border: 1px solid #c5cae9;
+    }
+    .btn-toggle-bulk.active {
+      background: #e8f5e9;
+      color: #2e7d32;
+      border-color: #a5d6a7;
+    }
+
     .samples {
-      margin-top: 18px;
+      margin-top: 16px;
     }
     .samples-title {
-      font-size: 0.85rem;
+      font-size: 0.83rem;
       color: #7986cb;
       margin-bottom: 8px;
       font-weight: 600;
@@ -106,28 +161,93 @@
     .chips {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
+      gap: 6px;
     }
     .chip {
       background: #e8eaf6;
       color: #3949ab;
       border-radius: 20px;
-      padding: 5px 14px;
-      font-size: 0.83rem;
+      padding: 5px 12px;
+      font-size: 0.82rem;
       cursor: pointer;
       border: 1.5px solid transparent;
       transition: all 0.15s;
     }
     .chip:hover { border-color: #3f51b5; background: #c5cae9; }
 
-    /* Result */
+    /* Bulk mode */
+    #bulk-section { display: none; }
+    .card-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .close-bulk-btn {
+      background: #ffebee;
+      color: #c62828;
+      border-radius: 50%;
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    .close-bulk-btn:hover { background: #ffcdd2; }
+
+    /* Progress Bar Card */
+    .progress-card {
+      background: #ffffff;
+      border-radius: 14px;
+      padding: 24px;
+      box-shadow: 0 4px 20px rgba(26,35,126,0.08);
+      margin-bottom: 14px;
+      text-align: center;
+      border: 1px solid #c5cae9;
+      animation: fadeIn 0.2s ease;
+    }
+    .progress-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #1a237e;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .progress-bar-track {
+      width: 100%;
+      height: 8px;
+      background: #e8eaf6;
+      border-radius: 4px;
+      overflow: hidden;
+      position: relative;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #3f51b5, #7986cb, #3f51b5);
+      background-size: 200% 100%;
+      border-radius: 4px;
+      animation: progressAnim 1.4s infinite linear;
+    }
+    @keyframes progressAnim {
+      0% { width: 15%; margin-left: 0%; }
+      50% { width: 55%; margin-left: 30%; }
+      100% { width: 15%; margin-left: 85%; }
+    }
+
+    /* Result cards */
     #result-section { display: none; }
 
     .result-card {
       background: #fff;
       border-radius: 14px;
       border-left: 5px solid #3f51b5;
-      padding: 20px 24px;
+      padding: 18px 22px;
       margin-bottom: 14px;
       box-shadow: 0 2px 12px rgba(26,35,126,0.07);
       animation: fadeIn 0.3s ease;
@@ -137,57 +257,73 @@
     .result-header {
       display: flex;
       align-items: center;
+      justify-content: space-between;
       gap: 10px;
-      margin-bottom: 10px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
     }
 
     .badge {
       display: inline-block;
-      padding: 3px 14px;
+      padding: 3px 12px;
       border-radius: 20px;
-      font-size: 0.85rem;
+      font-size: 0.83rem;
       font-weight: 700;
-      letter-spacing: 0.02em;
     }
     .badge-справка { background: #e3f2fd; color: #1565c0; }
     .badge-жалоба  { background: #fce4ec; color: #c62828; }
     .badge-другое  { background: #f3e5f5; color: #6a1b9a; }
 
+    .source-tag {
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .source-tag.source-rules {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+    .source-tag.source-ai {
+      background: #fff3e0;
+      color: #e65100;
+    }
+
     .result-text-label {
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       color: #9fa8da;
       font-weight: 600;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.04em;
     }
     .result-message-text {
       color: #3949ab;
       font-style: italic;
-      margin: 4px 0 12px 0;
-      font-size: 0.95rem;
+      margin: 3px 0 10px 0;
+      font-size: 0.93rem;
     }
     .result-draft {
       background: #f5f7ff;
       border-radius: 8px;
       padding: 12px 14px;
       color: #283593;
-      font-size: 0.95rem;
-      line-height: 1.6;
+      font-size: 0.93rem;
+      line-height: 1.55;
     }
     .result-draft-label {
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       color: #9fa8da;
       font-weight: 600;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.04em;
       margin-bottom: 6px;
     }
 
-    /* Bulk mode */
-    #bulk-section { display: none; }
-
     footer {
-      margin-top: 32px;
+      margin-top: 28px;
       color: #9fa8da;
       font-size: 0.82rem;
       text-align: center;
@@ -198,22 +334,35 @@
 
 <header>
   <h1>📬 Классификатор обращений</h1>
-  <p>Введите обращение — скрипт определит категорию и предложит черновик ответа</p>
+  <p>Определение категории и подготовка черновика ответа</p>
 </header>
 
-<!-- Input card -->
+<!-- Main Input Card -->
 <div class="card">
+  <!-- Mode Switcher -->
+  <div class="mode-switcher-container">
+    <span class="mode-label">Кто отвечает</span>
+    <div class="segmented-control">
+      <button id="btn-mode-ai" class="segmented-btn active" onclick="setEngine('ai')">
+        ✨ ИИ Нейросеть (Google Gemini)
+      </button>
+      <button id="btn-mode-rules" class="segmented-btn" onclick="setEngine('rules')">
+        ⚡ Локальный алгоритм (Экспресс)
+      </button>
+    </div>
+  </div>
+
   <label for="msg-input">Текст обращения</label>
   <textarea id="msg-input" placeholder="Например: Как получить справку о месте учёбы?"></textarea>
 
   <div class="btn-row">
     <button class="btn-primary" onclick="classifySingle()">🔍 Определить</button>
     <button class="btn-secondary" onclick="clearAll()">🗑 Очистить</button>
-    <button class="btn-secondary" onclick="toggleBulk()">📋 Несколько сразу</button>
+    <button id="btn-toggle-bulk-ui" class="btn-toggle-bulk" onclick="toggleBulk()">📋 Несколько сразу</button>
   </div>
 
   <div class="samples">
-    <div class="samples-title">Примеры из задания:</div>
+    <div class="samples-title">Примеры обращений:</div>
     <div class="chips">
       <span class="chip" onclick="setMsg(this)">Как получить справку о месте учёбы?</span>
       <span class="chip" onclick="setMsg(this)">В столовой очередь, еда холодная.</span>
@@ -224,13 +373,18 @@
   </div>
 </div>
 
-<!-- Bulk card -->
+<!-- Bulk Card -->
 <div class="card" id="bulk-section">
-  <label for="bulk-input">Несколько обращений (каждое на новой строке)</label>
-  <textarea id="bulk-input" style="height:160px" placeholder="Обращение 1&#10;Обращение 2&#10;Обращение 3"></textarea>
+  <div class="card-header-row">
+    <label for="bulk-input" style="margin-bottom:0;">Несколько обращений (каждое на новой строке)</label>
+    <button class="close-bulk-btn" onclick="toggleBulk()" title="Закрыть режим">✕</button>
+  </div>
+  <textarea id="bulk-input" style="height:150px" placeholder="Обращение 1&#10;Обращение 2&#10;Обращение 3"></textarea>
+
   <div class="btn-row">
     <button class="btn-primary" onclick="classifyBulk()">🔍 Разобрать все</button>
-    <button class="btn-secondary" onclick="loadDefaults()">📥 Загрузить 5 из задания</button>
+    <button class="btn-secondary" onclick="load3Defaults()">📥 Загрузить 3 примера</button>
+    <button class="btn-secondary" onclick="loadDefaults()">📥 Загрузить все 5 из задания</button>
   </div>
 </div>
 
@@ -243,13 +397,23 @@
 
 <script>
 // ─────────────────────────────────────────────────────────────────
-// Логика классификации (порт classify.py → JavaScript)
+// Режим обработки: 'ai' (ИИ Gemini по умолчанию) или 'rules'
+// ─────────────────────────────────────────────────────────────────
+let currentEngine = 'ai';
+
+function setEngine(mode) {
+  currentEngine = mode;
+  document.getElementById('btn-mode-ai').classList.toggle('active', mode === 'ai');
+  document.getElementById('btn-mode-rules').classList.toggle('active', mode === 'rules');
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Логика классификации
 // ─────────────────────────────────────────────────────────────────
 
 function cleanText(text) {
   text = text.trim();
   text = text.replace(/^\d+[\).]\s*/, '').trim();
-  // нормализуем unicode-дефисы
   text = text.replace(/[\u2011\u2013\u2014]/g, '-');
   return text.replace(/\s+/g, ' ').trim();
 }
@@ -293,20 +457,70 @@ function classifyAndRespond(message) {
     }
   }
 
-  return { category, draft, text: cleaned };
+  return { category, draft, text: cleaned, engine: 'rules' };
+}
+
+async function requestClassification(message, engineMode) {
+  try {
+    const res = await fetch('/api/classify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: message, engine: engineMode })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return {
+        category: data.category,
+        draft: data.draft,
+        text: data.text || cleanText(message),
+        engine: data.engine || engineMode
+      };
+    }
+  } catch (err) {
+    // Ели сервер недоступен — оффлайн фоллбэк
+  }
+
+  const fallbackRes = classifyAndRespond(message);
+  fallbackRes.engine = 'rules';
+  return fallbackRes;
 }
 
 // ─────────────────────────────────────────────────────────────────
-// UI-хэлперы
+// Отображение результатов и прогресс-бара
 // ─────────────────────────────────────────────────────────────────
 
 const BADGE_ICONS = { 'справка': '📄', 'жалоба': '⚠️', 'другое': '💬' };
 
-function renderResult({ text, category, draft }) {
+function showLoader(titleText) {
+  const section = document.getElementById('result-section');
+  const list = document.getElementById('results-list');
+  list.innerHTML = `
+    <div class="progress-card">
+      <div class="progress-title">
+        <span>✨</span> ${escHtml(titleText)}
+      </div>
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill"></div>
+      </div>
+      <div style="font-size:0.78rem; color:#7986cb; margin-top:12px;">
+        Анализ контекста, определение категории и генерация ответа...
+      </div>
+    </div>`;
+  section.style.display = 'block';
+  section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function renderResult({ text, category, draft, engine }) {
+  const isAI = engine === 'ai';
+  const sourceHtml = isAI
+    ? `<span class="source-tag source-ai">✨ Ответила ИИ Нейросеть (Google Gemini)</span>`
+    : `<span class="source-tag source-rules">⚡ Ответил локальный алгоритм правил</span>`;
+
   return `
     <div class="result-card">
       <div class="result-header">
-        <span class="badge badge-${category}">${BADGE_ICONS[category]} ${category}</span>
+        <span class="badge badge-${category}">${BADGE_ICONS[category] || '💬'} ${category}</span>
+        ${sourceHtml}
       </div>
       <div class="result-text-label">Обращение</div>
       <div class="result-message-text">«${escHtml(text)}»</div>
@@ -316,7 +530,7 @@ function renderResult({ text, category, draft }) {
 }
 
 function escHtml(s) {
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 function showResults(results) {
@@ -330,14 +544,28 @@ function showResults(results) {
 function classifySingle() {
   const msg = document.getElementById('msg-input').value.trim();
   if (!msg) { alert('Введите текст обращения.'); return; }
-  showResults([classifyAndRespond(msg)]);
+
+  if (currentEngine === 'rules' || typeof fetch === 'undefined') {
+    showResults([classifyAndRespond(msg)]);
+    return;
+  }
+
+  showLoader('ИИ Нейросеть (Google Gemini) генерирует ответ...');
+  requestClassification(msg, 'ai').then(res => showResults([res]));
 }
 
 function classifyBulk() {
   const lines = document.getElementById('bulk-input').value
     .split('\n').map(l => l.trim()).filter(Boolean);
   if (!lines.length) { alert('Введите хотя бы одно обращение.'); return; }
-  showResults(lines.map(classifyAndRespond));
+
+  if (currentEngine === 'rules' || typeof fetch === 'undefined') {
+    showResults(lines.map(classifyAndRespond));
+    return;
+  }
+
+  showLoader(`ИИ Нейросеть обрабатывает ${lines.length} обращений одновременно...`);
+  Promise.all(lines.map(line => requestClassification(line, 'ai'))).then(results => showResults(results));
 }
 
 function clearAll() {
@@ -349,12 +577,27 @@ function clearAll() {
 
 function toggleBulk() {
   const s = document.getElementById('bulk-section');
-  s.style.display = s.style.display === 'block' ? 'none' : 'block';
+  const isHidden = s.style.display === 'none' || s.style.display === '';
+  s.style.display = isHidden ? 'block' : 'none';
+
+  const btn = document.getElementById('btn-toggle-bulk-ui');
+  if (btn) {
+    btn.classList.toggle('active', isHidden);
+    btn.textContent = isHidden ? '✕ Скрыть пакетный режим' : '📋 Несколько сразу';
+  }
 }
 
 function setMsg(el) {
   document.getElementById('msg-input').value = el.textContent;
   document.getElementById('msg-input').focus();
+}
+
+function load3Defaults() {
+  document.getElementById('bulk-input').value = [
+    'Как получить справку о месте учёбы?',
+    'В столовой очередь, еда холодная.',
+    'Хочу записаться на консультацию завтра.',
+  ].join('\n');
 }
 
 function loadDefaults() {
