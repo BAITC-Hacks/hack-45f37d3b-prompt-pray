@@ -34,10 +34,9 @@ class ClassifierHandler(SimpleHTTPRequestHandler):
                     self._send_json({"error": "Пустой текст обращения"}, status=400)
                     return
 
+                fallback_notice = None
                 if engine == "ai":
-                    # Использует ключ из .env сервера, не передавая его клиенту
-                    category, draft = classify_with_gemini(message)
-                    source_engine = "ai" if (os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")) else "rules"
+                    category, draft, source_engine, fallback_notice = classify_with_gemini(message, return_meta=True)
                 else:
                     category, draft = classify_and_respond(message)
                     source_engine = "rules"
@@ -46,7 +45,8 @@ class ClassifierHandler(SimpleHTTPRequestHandler):
                     "category": category,
                     "draft": draft,
                     "text": message,
-                    "engine": source_engine
+                    "engine": source_engine,
+                    "fallbackNotice": fallback_notice
                 })
             except Exception as exc:
                 self._send_json({"error": str(exc)}, status=500)

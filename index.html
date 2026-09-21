@@ -473,15 +473,17 @@ async function requestClassification(message, engineMode) {
         category: data.category,
         draft: data.draft,
         text: data.text || cleanText(message),
-        engine: data.engine || engineMode
+        engine: data.engine || engineMode,
+        fallbackNotice: data.fallbackNotice
       };
     }
   } catch (err) {
-    // Ели сервер недоступен — оффлайн фоллбэк
+    // Если сервер недоступен — оффлайн фоллбэк
   }
 
   const fallbackRes = classifyAndRespond(message);
   fallbackRes.engine = 'rules';
+  fallbackRes.fallbackNotice = 'Сервер недоступен — использован оффлайн алгоритм правил';
   return fallbackRes;
 }
 
@@ -510,11 +512,15 @@ function showLoader(titleText) {
   section.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-function renderResult({ text, category, draft, engine }) {
+function renderResult({ text, category, draft, engine, fallbackNotice }) {
   const isAI = engine === 'ai';
   const sourceHtml = isAI
     ? `<span class="source-tag source-ai">✨ Ответила ИИ Нейросеть (Google Gemini)</span>`
     : `<span class="source-tag source-rules">⚡ Ответил локальный алгоритм правил</span>`;
+
+  const noticeHtml = fallbackNotice
+    ? `<div style="font-size:0.78rem; color:#d81b60; font-weight:600; margin-bottom:8px;">⚠️ ${escHtml(fallbackNotice)}</div>`
+    : '';
 
   return `
     <div class="result-card">
@@ -522,6 +528,7 @@ function renderResult({ text, category, draft, engine }) {
         <span class="badge badge-${category}">${BADGE_ICONS[category] || '💬'} ${category}</span>
         ${sourceHtml}
       </div>
+      ${noticeHtml}
       <div class="result-text-label">Обращение</div>
       <div class="result-message-text">«${escHtml(text)}»</div>
       <div class="result-draft-label">Черновик ответа</div>

@@ -108,9 +108,45 @@ def load_env_file():
             pass
 
 
-def classify_with_gemini(message: str, api_key: str = None) -> Tuple[str, str]:
+_MODEL_CACHE = {"models": [], "ts": 0}
+
+
+def get_available_gemini_models(api_key: str) -> list:
+    """Динамически запрашивает у Google API список доступных моделей для данного ключа."""
+    import time
+    import json
+    import urllib.request
+    now = time.time()
+    if _MODEL_CACHE["models"] and (now - _MODEL_CACHE["ts"]) < 600:
+        return _MODEL_CACHE["models"]
+
+    default_models = ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-2.5-flash-lite", "gemini-3.8-flash", "gemini-flash-latest"]
+    url = f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}"
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "Classifier/1.0"})
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            found = []
+            for m in data.get("models", []):
+                name = m.get("name", "").replace("models/", "")
+                methods = m.get("supportedGenerationMethods", [])
+                if "generateContent" in methods and "flash" in name and "image" not in name and "tts" not in name:
+                    found.append(name)
+            if found:
+                # На первые места ставим наиболее легковесные модели с максимальным RPM лимитом
+                found.sort(key=lambda x: (0 if "lite" in x else 1, 0 if "3.5" in x else (1 if "3.1" in x else 2)))
+                _MODEL_CACHE["models"] = found
+                _MODEL_CACHE["ts"] = now
+                return found
+    except Exception:
+        pass
+
+    return default_models
+
+
+def classify_with_gemini(message: str, api_key: str = None, return_meta: bool = False) -> Tuple:
     """
-    Классифицирует обращение с помощью Google Gemini API (бесплатный уровень).
+    Классифицирует обращение с помощью Google Gemini API с автовыбором доступной модели.
     При отсутствии ключа или сетевой ошибке безопасно возвращает результат локальных правил.
     """
     import os
@@ -122,15 +158,16 @@ def classify_with_gemini(message: str, api_key: str = None) -> Tuple[str, str]:
     key = api_key or os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
     if not key:
         print("[Инфо] GEMINI_API_KEY не задан. Используются локальные правила.", file=sys.stderr)
-        return classify_and_respond(message)
+        cat, draft = classify_and_respond(message)
+        return (cat, draft, "rules", "GEMINI_API_KEY не задан") if return_meta else (cat, draft)
 
-    models = ["gemini-flash-latest", "gemini-3.5-flash-lite"]
+    models = get_available_gemini_models(key)
     prompt = (
-        "Ты — помощник службы поддержки. Классифицируй входящее обращение строго по одной из трёх категорий: "
-        "'справка', 'жалоба', 'другое'.\n"
-        "Сформируй вежливый черновик ответа на русском языке (начинается с 'Здравствуйте!').\n"
-        f"Обращение: \"{message}\"\n\n"
-        "Верни результат СТРОГО в формате JSON:\n"
+        "Ты — лаконичный специалист службы поддержки.\n"
+        f"Проанализируй обращение: \"{message}\"\n\n"
+        "1. Определи категорию строго из: 'справка', 'жалоба', 'другое'.\n"
+        "2. Напиши краткий, точный и человечный черновик ответа (1-3 предложения, начинай со 'Здравствуйте!'). Без лишней воды.\n\n"
+        "Формат JSON:\n"
         '{"category": "справка"|"жалоба"|"другое", "draft": "текст ответа"}'
     )
 
@@ -138,10 +175,12 @@ def classify_with_gemini(message: str, api_key: str = None) -> Tuple[str, str]:
         "contents": [{"parts": [{"text": prompt}]}],
         "generationConfig": {
             "responseMimeType": "application/json",
-            "temperature": 0.2
+            "temperature": 0.5,
+            "maxOutputTokens": 200
         }
     }
 
+    last_error = None
     for model_name in models:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={key}"
         try:
@@ -161,17 +200,25 @@ def classify_with_gemini(message: str, api_key: str = None) -> Tuple[str, str]:
                 draft = str(parsed.get("draft", "")).strip()
                 if not draft:
                     draft = classify_and_respond(message)[1]
-                return cat, draft
+                return (cat, draft, "ai", None) if return_meta else (cat, draft)
         except urllib.error.HTTPError as err:
-            if err.code == 503:
+            last_error = f"HTTP {err.code}"
+            if err.code in (429, 503, 404):
                 continue
             error_body = err.read().decode("utf-8", errors="replace")
             print(f"[Предупреждение] Gemini API HTTP {err.code}: {error_body}", file=sys.stderr)
-            return classify_and_respond(message)
-        except Exception:
+            cat, draft = classify_and_respond(message)
+            return (cat, draft, "rules", f"Gemini API вернул ошибку {err.code}") if return_meta else (cat, draft)
+        except Exception as exc:
+            err_str = str(exc)
+            if "nodename nor servname" in err_str or "Errno 8" in err_str or "Name or service not known" in err_str or "temporary failure" in err_str.lower():
+                last_error = "Отсутствует подключение к интернету"
+            else:
+                last_error = err_str
             continue
 
-    return classify_and_respond(message)
+    cat, draft = classify_and_respond(message)
+    return (cat, draft, "rules", last_error or "Ошибка соединения с Gemini API") if return_meta else (cat, draft)
 
 
 def main(argv=None) -> int:
