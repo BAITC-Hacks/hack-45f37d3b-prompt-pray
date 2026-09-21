@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Классификатор обращений</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f0f4ff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 16px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    header h1 {
+      font-size: 1.9rem;
+      color: #1a237e;
+      font-weight: 700;
+    }
+    header p {
+      color: #5c6bc0;
+      margin-top: 6px;
+      font-size: 0.95rem;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 4px 24px rgba(26,35,126,0.10);
+      padding: 28px 32px;
+      width: 100%;
+      max-width: 680px;
+      margin-bottom: 24px;
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      color: #3949ab;
+      margin-bottom: 10px;
+      font-size: 0.95rem;
+    }
+
+    textarea {
+      width: 100%;
+      height: 110px;
+      border: 2px solid #c5cae9;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 1rem;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.2s;
+      color: #1a237e;
+    }
+    textarea:focus { border-color: #3f51b5; }
+
+    .btn-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 16px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      padding: 10px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+    button:active { transform: scale(0.97); }
+
+    .btn-primary {
+      background: #3f51b5;
+      color: #fff;
+    }
+    .btn-primary:hover { background: #303f9f; }
+
+    .btn-secondary {
+      background: #e8eaf6;
+      color: #3949ab;
+    }
+    .btn-secondary:hover { background: #c5cae9; }
+
+    .samples {
+      margin-top: 18px;
+    }
+    .samples-title {
+      font-size: 0.85rem;
+      color: #7986cb;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .chip {
+      background: #e8eaf6;
+      color: #3949ab;
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-size: 0.83rem;
+      cursor: pointer;
+      border: 1.5px solid transparent;
+      transition: all 0.15s;
+    }
+    .chip:hover { border-color: #3f51b5; background: #c5cae9; }
+
+    /* Result */
+    #result-section { display: none; }
+
+    .result-card {
+      background: #fff;
+      border-radius: 14px;
+      border-left: 5px solid #3f51b5;
+      padding: 20px 24px;
+      margin-bottom: 14px;
+      box-shadow: 0 2px 12px rgba(26,35,126,0.07);
+      animation: fadeIn 0.3s ease;
+    }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+    .result-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 14px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+    .badge-справка { background: #e3f2fd; color: #1565c0; }
+    .badge-жалоба  { background: #fce4ec; color: #c62828; }
+    .badge-другое  { background: #f3e5f5; color: #6a1b9a; }
+
+    .result-text-label {
+      font-size: 0.8rem;
+      color: #9fa8da;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .result-message-text {
+      color: #3949ab;
+      font-style: italic;
+      margin: 4px 0 12px 0;
+      font-size: 0.95rem;
+    }
+    .result-draft {
+      background: #f5f7ff;
+      border-radius: 8px;
+      padding: 12px 14px;
+      color: #283593;
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+    .result-draft-label {
+      font-size: 0.8rem;
+      color: #9fa8da;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 6px;
+    }
+
+    /* Bulk mode */
+    #bulk-section { display: none; }
+
+    footer {
+      margin-top: 32px;
+      color: #9fa8da;
+      font-size: 0.82rem;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>📬 Классификатор обращений</h1>
+  <p>Введите обращение — скрипт определит категорию и предложит черновик ответа</p>
+</header>
+
+<!-- Input card -->
+<div class="card">
+  <label for="msg-input">Текст обращения</label>
+  <textarea id="msg-input" placeholder="Например: Как получить справку о месте учёбы?"></textarea>
+
+  <div class="btn-row">
+    <button class="btn-primary" onclick="classifySingle()">🔍 Определить</button>
+    <button class="btn-secondary" onclick="clearAll()">🗑 Очистить</button>
+    <button class="btn-secondary" onclick="toggleBulk()">📋 Несколько сразу</button>
+  </div>
+
+  <div class="samples">
+    <div class="samples-title">Примеры из задания:</div>
+    <div class="chips">
+      <span class="chip" onclick="setMsg(this)">Как получить справку о месте учёбы?</span>
+      <span class="chip" onclick="setMsg(this)">В столовой очередь, еда холодная.</span>
+      <span class="chip" onclick="setMsg(this)">Хочу записаться на консультацию завтра.</span>
+      <span class="chip" onclick="setMsg(this)">Пропал Wi‑Fi в корпусе B.</span>
+      <span class="chip" onclick="setMsg(this)">Где парковка для гостей?</span>
+    </div>
+  </div>
+</div>
+
+<!-- Bulk card -->
+<div class="card" id="bulk-section">
+  <label for="bulk-input">Несколько обращений (каждое на новой строке)</label>
+  <textarea id="bulk-input" style="height:160px" placeholder="Обращение 1&#10;Обращение 2&#10;Обращение 3"></textarea>
+  <div class="btn-row">
+    <button class="btn-primary" onclick="classifyBulk()">🔍 Разобрать все</button>
+    <button class="btn-secondary" onclick="loadDefaults()">📥 Загрузить 5 из задания</button>
+  </div>
+</div>
+
+<!-- Results -->
+<div id="result-section" style="width:100%;max-width:680px;">
+  <div id="results-list"></div>
+</div>
+
+<footer>Команда Prompt &amp; Pray · Классификатор обращений · 2026</footer>
+
+<script>
+// ─────────────────────────────────────────────────────────────────
+// Логика классификации (порт classify.py → JavaScript)
+// ─────────────────────────────────────────────────────────────────
+
+function cleanText(text) {
+  text = text.trim();
+  text = text.replace(/^\d+[\).]\s*/, '').trim();
+  // нормализуем unicode-дефисы
+  text = text.replace(/[\u2011\u2013\u2014]/g, '-');
+  return text;
+}
+
+function classifyAndRespond(message) {
+  const cleaned = cleanText(message);
+  const lower = cleaned.toLowerCase();
+
+  const isCertificate = ['справк', 'выписк', 'документ об уч', 'подтверждение обучен'].some(k => lower.includes(k));
+  const isComplaint   = ['холодн', 'очеред', 'пропал', 'не работает', 'сломал',
+                          'грязн', 'плох', 'жалоб', 'претензи', 'не ловит', 'ужасн', 'сбой'].some(k => lower.includes(k));
+
+  let category, draft;
+
+  if (isCertificate) {
+    category = 'справка';
+    if (['месте уч', 'обучен', 'студент'].some(k => lower.includes(k))) {
+      draft = 'Здравствуйте! Справку об обучении можно заказать онлайн в личном кабинете студента (раздел «Услуги и справки») либо получить в студенческом отделе (кабинет 101, пн–пт с 09:00 до 18:00). Срок готовности обычно составляет 1–2 рабочих дня.';
+    } else {
+      draft = 'Здравствуйте! Вы можете заказать необходимую справку через личный кабинет или обратиться в единое окно обслуживания студентов. Уточните, пожалуйста, требуемый вид справки и место предоставления.';
+    }
+  } else if (isComplaint) {
+    category = 'жалоба';
+    if (['столов', 'ед', 'питани'].some(k => lower.includes(k))) {
+      draft = 'Здравствуйте! Приносим извинения за доставленные неудобства. Информация передана администрации столовой и службе контроля качества питания: мы проверим температурный режим блюд на раздаче и график работы касс для сокращения очередей.';
+    } else if (['wi-fi', 'вайфай', 'интернет', 'сеть'].some(k => lower.includes(k))) {
+      draft = 'Здравствуйте! Благодарим за сигнал. Заявка зарегистрирована и передана в отдел технической поддержки. Инженеры уже проводят диагностику сетевого оборудования для скорейшего восстановления доступа к Wi-Fi.';
+    } else {
+      draft = 'Здравствуйте! Приносим извинения за возникшие неудобства. Ваше обращение зафиксировано и направлено в профильную службу для устранения проблемы. Мы свяжемся с вами по итогам проверки.';
+    }
+  } else {
+    category = 'другое';
+    if (['консультаци', 'записаться'].some(k => lower.includes(k))) {
+      draft = 'Здравствуйте! Записаться на консультацию можно в личном кабинете в разделе «Электронная запись» или обратившись напрямую в учебную часть. Подскажите, пожалуйста, к какому преподавателю или специалисту вы планируете записаться?';
+    } else if (['парковк', 'машин', 'авто'].some(k => lower.includes(k))) {
+      draft = 'Здравствуйте! Гостевая парковка находится с северной стороны главного корпуса (въезд со стороны улицы Университетской через шлагбаум №2). Для въезда сообщите сотруднику охраны цель визита и номер автомобиля.';
+    } else {
+      draft = 'Здравствуйте! Спасибо за обращение. Мы приняли ваш запрос в обработку. При необходимости предоставить дополнительные детали, пожалуйста, ответьте на это сообщение.';
+    }
+  }
+
+  return { category, draft, text: cleaned };
+}
+
+// ─────────────────────────────────────────────────────────────────
+// UI-хэлперы
+// ─────────────────────────────────────────────────────────────────
+
+const BADGE_ICONS = { 'справка': '📄', 'жалоба': '⚠️', 'другое': '💬' };
+
+function renderResult({ text, category, draft }) {
+  return `
+    <div class="result-card">
+      <div class="result-header">
+        <span class="badge badge-${category}">${BADGE_ICONS[category]} ${category}</span>
+      </div>
+      <div class="result-text-label">Обращение</div>
+      <div class="result-message-text">«${escHtml(text)}»</div>
+      <div class="result-draft-label">Черновик ответа</div>
+      <div class="result-draft">${escHtml(draft)}</div>
+    </div>`;
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function showResults(results) {
+  const section = document.getElementById('result-section');
+  const list = document.getElementById('results-list');
+  list.innerHTML = results.map(renderResult).join('');
+  section.style.display = 'block';
+  section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function classifySingle() {
+  const msg = document.getElementById('msg-input').value.trim();
+  if (!msg) { alert('Введите текст обращения.'); return; }
+  showResults([classifyAndRespond(msg)]);
+}
+
+function classifyBulk() {
+  const lines = document.getElementById('bulk-input').value
+    .split('\n').map(l => l.trim()).filter(Boolean);
+  if (!lines.length) { alert('Введите хотя бы одно обращение.'); return; }
+  showResults(lines.map(classifyAndRespond));
+}
+
+function clearAll() {
+  document.getElementById('msg-input').value = '';
+  document.getElementById('result-section').style.display = 'none';
+  document.getElementById('results-list').innerHTML = '';
+}
+
+function toggleBulk() {
+  const s = document.getElementById('bulk-section');
+  s.style.display = s.style.display === 'none' ? 'block' : 'none';
+}
+
+function setMsg(el) {
+  document.getElementById('msg-input').value = el.textContent;
+  document.getElementById('msg-input').focus();
+}
+
+function loadDefaults() {
+  document.getElementById('bulk-input').value = [
+    'Как получить справку о месте учёбы?',
+    'В столовой очередь, еда холодная.',
+    'Хочу записаться на консультацию завтра.',
+    'Пропал Wi‑Fi в корпусе B.',
+    'Где парковка для гостей?',
+  ].join('\n');
+}
+
+// Enter → classify
+document.getElementById('msg-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); classifySingle(); }
+});
+</script>
+</body>
+</html>
